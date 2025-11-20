@@ -30,6 +30,7 @@ public class MapController implements IMapController {
         return marker;
     }
 
+
     public MapView getMap(){
         return map;
     }

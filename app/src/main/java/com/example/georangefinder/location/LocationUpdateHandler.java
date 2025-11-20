@@ -33,7 +33,7 @@ public class LocationUpdateHandler implements LocationService.LocationCallback{
                     R.drawable.current_location
             );
             userMarker.setIcon(icon);
-            userMarker.setInfoWindow(null); // wyłączenie popupu
+            userMarker.setInfoWindow(null);
         } else {
             userMarker.setPosition(new GeoPoint(lat, lon));
         }
