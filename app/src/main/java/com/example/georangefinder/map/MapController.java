@@ -1,6 +1,7 @@
 package com.example.georangefinder.map;
 
 import com.example.georangefinder.markers.MarkerData;
+import com.example.georangefinder.markers.MarkerStorage;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
@@ -40,12 +41,21 @@ public class MapController implements IMapController {
         marker.setPosition(data.toGeoPoint());
         marker.setTitle(data.getName());
         marker.setSnippet(data.getDescription());
+
+        marker.setOnMarkerClickListener((m, mapView) -> {
+            removeMarker(m);
+            MarkerStorage storage = new MarkerStorage(map.getContext());
+            storage.saveMarkers(new ArrayList<>(savedMarkers));
+            return true;
+        });
+
         map.getOverlays().add(marker);
         map.invalidate();
 
         savedMarkers.add(data);
         return marker;
     }
+
     public List<MarkerData> getMarkers() {
         return savedMarkers;
     }
@@ -53,4 +63,23 @@ public class MapController implements IMapController {
     public MapView getMap(){
         return map;
     }
+
+    public void removeMarker(Marker marker) {
+        map.getOverlays().remove(marker);
+        map.invalidate();
+
+        MarkerData toRemove = null;
+        for (MarkerData data : savedMarkers) {
+            if (data.getLatitude() == marker.getPosition().getLatitude()
+                    && data.getLongitude() == marker.getPosition().getLongitude()
+                    && data.getName().equals(marker.getTitle())) {
+                toRemove = data;
+                break;
+            }
+        }
+        if (toRemove != null) {
+            savedMarkers.remove(toRemove);
+        }
+    }
+
 }
