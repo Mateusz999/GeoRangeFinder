@@ -12,26 +12,27 @@ import com.example.georangefinder.markers.MarkerData;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Marker;
 
-public class LocationUpdateHandler implements LocationService.LocationCallback{
+public class LocationUpdateHandler implements LocationService.LocationCallback {
     private final MapController mapController;
     private Marker userMarker;
 
-    public LocationUpdateHandler(MapController mapController){
+    public LocationUpdateHandler(MapController mapController) {
         this.mapController = mapController;
     }
 
     @Override
-    public void onLocationChanged(Location newlocation){
+    public void onLocationChanged(Location newlocation) {
         double lat = newlocation.getLatitude();
         double lon = newlocation.getLongitude();
 
+        mapController.showUserLocation(lat, lon);
 
-        mapController.showUserLocation(lat,lon);
         if (userMarker == null) {
             MarkerData data = new MarkerData(lat, lon, "Moja lokalizacja", "Aktualna pozycja");
             userMarker = mapController.addUserLocationMarker(data);
+
             Drawable icon = ContextCompat.getDrawable(
-                    mapController.getMap().getContext(),
+                    mapController.getContext(),
                     R.drawable.current_location
             );
             userMarker.setIcon(icon);
@@ -39,7 +40,7 @@ public class LocationUpdateHandler implements LocationService.LocationCallback{
         } else {
             userMarker.setPosition(new GeoPoint(lat, lon));
         }
-        mapController.getMap().invalidate();
 
+        mapController.getMap().invalidate();
     }
 }

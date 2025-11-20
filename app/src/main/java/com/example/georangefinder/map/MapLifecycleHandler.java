@@ -9,7 +9,6 @@ public class MapLifecycleHandler {
     private final MapView mapView;
     private final LocationService locationService;
 
-
     public MapLifecycleHandler(MapView mapView, LocationService locationService) {
         this.mapView = mapView;
         this.locationService = locationService;

@@ -1,5 +1,7 @@
 package com.example.georangefinder.map;
 
+import android.content.Context;
+
 import com.example.georangefinder.markers.MarkerData;
 import com.example.georangefinder.markers.MarkerStorage;
 
@@ -12,7 +14,7 @@ import java.util.List;
 
 public class MapController implements IMapController {
 
-    private MapView map;
+    private final MapView map;
     private final List<MarkerData> savedMarkers = new ArrayList<>();
 
     public MapController(MapView map) {
@@ -21,10 +23,11 @@ public class MapController implements IMapController {
 
     @Override
     public void showUserLocation(double lat, double lon) {
-            GeoPoint currentLocalization  = new GeoPoint(lat,lon);
-            map.getController().setZoom(15.0);
-            map.getController().setCenter(currentLocalization);
+        GeoPoint currentLocalization = new GeoPoint(lat, lon);
+        map.getController().setZoom(15.0);
+        map.getController().setCenter(currentLocalization);
     }
+
     public Marker addUserLocationMarker(MarkerData data) {
         Marker marker = new Marker(map);
         marker.setPosition(data.toGeoPoint());
@@ -32,9 +35,9 @@ public class MapController implements IMapController {
         marker.setSnippet(data.getDescription());
         map.getOverlays().add(marker);
         map.invalidate();
-
         return marker;
     }
+
     @Override
     public Marker addMarker(MarkerData data) {
         Marker marker = new Marker(map);
@@ -56,12 +59,15 @@ public class MapController implements IMapController {
         return marker;
     }
 
-    public List<MarkerData> getMarkers() {
-        return savedMarkers;
+    public List<MarkerData> getMarkersData() {
+        return new ArrayList<>(savedMarkers);
     }
 
-    public MapView getMap(){
-        return map;
+    public void removeLastMarker() {
+        if (!savedMarkers.isEmpty()) {
+            MarkerData last = savedMarkers.remove(savedMarkers.size() - 1);
+            removeMarkerByData(last);
+        }
     }
 
     public void removeMarker(Marker marker) {
@@ -82,4 +88,30 @@ public class MapController implements IMapController {
         }
     }
 
+    private void removeMarkerByData(MarkerData data) {
+        Marker toRemove = null;
+        for (Object o : new ArrayList<>(map.getOverlays())) {
+            if (o instanceof Marker) {
+                Marker m = (Marker) o;
+                if (m.getPosition().getLatitude() == data.getLatitude()
+                        && m.getPosition().getLongitude() == data.getLongitude()
+                        && m.getTitle().equals(data.getName())) {
+                    toRemove = m;
+                    break;
+                }
+            }
+        }
+        if (toRemove != null) {
+            map.getOverlays().remove(toRemove);
+            map.invalidate();
+        }
+    }
+
+    public MapView getMap() {
+        return map;
+    }
+
+    public Context getContext() {
+        return map.getContext();
+    }
 }

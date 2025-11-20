@@ -7,4 +7,5 @@ import org.osmdroid.views.overlay.Marker;
 public interface IMapController {
     void showUserLocation(double lat, double lon);
     Marker addMarker(MarkerData data);
+    Marker addUserLocationMarker(MarkerData data);
 }

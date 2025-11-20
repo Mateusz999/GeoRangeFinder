@@ -1,6 +1,5 @@
 package com.example.georangefinder;
 
-
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -9,8 +8,12 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.georangefinder.location.LocationService;
 import com.example.georangefinder.location.LocationUpdateHandler;
@@ -20,6 +23,9 @@ import com.example.georangefinder.map.MapInitializer;
 import com.example.georangefinder.map.MapLifecycleHandler;
 import com.example.georangefinder.markers.MarkerData;
 import com.example.georangefinder.markers.MarkerStorage;
+import com.example.georangefinder.menu.MarkerAdapter;
+import com.example.georangefinder.menu.MenuController;
+import com.example.georangefinder.menu.RangeChecker;
 import com.example.georangefinder.permissions.PermissionManager;
 import com.example.georangefinder.markers.AddMarkerButtonController;
 import com.example.georangefinder.utils.CircleDrawer;
@@ -30,6 +36,7 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -39,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private MapController mapController;
     private LocationService locationService;
     private MapLifecycleHandler lifecycleHandler;
-
     private MapEventsOverlay overlay;
     private SeekBarController seekBarController;
     private LocationButtonController locationButtonController;
@@ -47,11 +53,25 @@ public class MainActivity extends AppCompatActivity {
     private MapClickListener clickListener;
     private MarkerStorage markerStorage;
     private CircleDrawer circleDrawer;
+    private MenuController menuController;
+    private List<MarkerData> markersInCircle = new ArrayList<>();
+    private RangeChecker rangeChecker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        ImageButton hamburgerButton = findViewById(R.id.hamburgerButton);
+        RecyclerView markerRecycler = findViewById(R.id.markerRecycler);
+
+        MarkerAdapter adapter = new MarkerAdapter();
+        markerRecycler.setAdapter(adapter);
+        markerRecycler.setLayoutManager(new LinearLayoutManager(this));
+
+        menuController = new MenuController(drawerLayout, hamburgerButton);
+        menuController.setMarkerAdapter(adapter);
 
         SeekBar seekBar = findViewById(R.id.rangeSeekBar);
         TextView rangeValueText = findViewById(R.id.rangeValueText);
@@ -59,9 +79,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton currentLocationButton = findViewById(R.id.currentLocationButton);
         ImageButton addMarkerButton = findViewById(R.id.addMarkerButton);
 
-
         markerStorage = new MarkerStorage(this);
-
 
         seekBarController = new SeekBarController(this, rangeValueText);
         seekBar.setOnSeekBarChangeListener(seekBarController);
@@ -72,42 +90,40 @@ public class MainActivity extends AppCompatActivity {
         mapController = new MapController(mapView);
         mapController.showUserLocation(50.473, 17.334);
 
-
         List<MarkerData> savedMarkers = markerStorage.loadMarkers();
         for (MarkerData data : savedMarkers) {
             mapController.addMarker(data);
         }
 
-        locationService = new LocationService(this,new LocationUpdateHandler(mapController));
+        locationService = new LocationService(this, new LocationUpdateHandler(mapController));
         lifecycleHandler = new MapLifecycleHandler(mapView, locationService);
 
+        circleDrawer = new CircleDrawer(mapView);
+        clickListener = new MapClickListener(this, mapController, markerStorage);
 
-        clickListener = new MapClickListener(this,mapController,markerStorage);
         overlay = new MapEventsOverlay(clickListener);
         mapView.getOverlays().add(overlay);
 
-
-        locationButtonController = new LocationButtonController(mapView,locationService);
+        locationButtonController = new LocationButtonController(mapView, locationService);
         locationButtonController.attachTo(currentLocationButton);
 
-        circleDrawer = new CircleDrawer(mapView);
         addMarkerButtonController = new AddMarkerButtonController(clickListener);
         addMarkerButtonController.attachTo(addMarkerButton);
 
+        rangeChecker = new RangeChecker(mapController,circleDrawer,menuController);
 
 
-        changeRangeButton.setOnClickListener( v -> {
+        changeRangeButton.setOnClickListener(v -> {
             Location userLocation = locationService.getCurrentLocation();
-            if(userLocation != null){
-                GeoPoint center = new GeoPoint(userLocation.getLatitude(),userLocation.getLongitude());
-                circleDrawer.drawCircle(center,seekBarController.getCurrentRadius());
-            } else {
-                Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show();
-            }
+            int radiusKm = seekBarController.getCurrentRadius();
+            rangeChecker.checkRange(userLocation, radiusKm);
         });
-        if(PermissionManager.hasLocationPermission(this)){
+
+
+
+        if (PermissionManager.hasLocationPermission(this)) {
             locationService.startLocationUpdates();
-        }else {
+        } else {
             PermissionManager.requestLocationPermission(this);
         }
     }
@@ -129,10 +145,10 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         lifecycleHandler.onResume();
     }
+
     @Override
     protected void onPause() {
         super.onPause();
         lifecycleHandler.onPause();
-
     }
 }
