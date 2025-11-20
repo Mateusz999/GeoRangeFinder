@@ -1,4 +1,4 @@
-package com.example.georangefinder;
+package com.example.georangefinder.utils;
 
 import java.io.Serializable;
 

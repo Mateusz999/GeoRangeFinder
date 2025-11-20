@@ -1,4 +1,4 @@
-package com.example.georangefinder;
+package com.example.georangefinder.location;
 
 public interface ILocationProvider {
 

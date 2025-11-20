@@ -1,25 +1,32 @@
 package com.example.georangefinder;
 
-import android.Manifest;
+
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
-import org.osmdroid.util.GeoPoint;
+import com.example.georangefinder.location.LocationService;
+import com.example.georangefinder.location.LocationUpdateHandler;
+import com.example.georangefinder.map.MapClickListener;
+import com.example.georangefinder.map.MapController;
+import com.example.georangefinder.map.MapInitializer;
+import com.example.georangefinder.map.MapLifecycleHandler;
+import com.example.georangefinder.permissions.PermissionManager;
+
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MapEventsOverlay;
 
 public class MainActivity extends AppCompatActivity {
-
     private static final int REQUEST_LOCATION = 1;
 
     private MapView mapView;
     private MapController mapController;
     private LocationService locationService;
+    private MapLifecycleHandler lifecycleHandler;
+
+    private MapEventsOverlay overlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,21 +34,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mapView = findViewById(R.id.map);
-        mapController = new MapController(mapView);
+        mapView = MapInitializer.initMap(this,mapView);
 
+        mapController = new MapController(mapView);
         mapController.showUserLocation(50.473, 17.334);
 
-        locationService = new LocationService(this, newLocation -> {
-            mapController.showUserLocation(newLocation.getLatitude(), newLocation.getLongitude());
-            mapController.addMarker(newLocation.getLatitude(), newLocation.getLongitude(), "Moja lokalizacja","dodany punkt");
-        });
+        locationService = new LocationService(this,new LocationUpdateHandler(mapController));
+        lifecycleHandler = new MapLifecycleHandler(mapView, locationService);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
-        } else {
+
+        MapClickListener clickListener = new MapClickListener(this,mapController);
+        overlay = new MapEventsOverlay(clickListener);
+        mapView.getOverlays().add(overlay);
+
+        if(PermissionManager.hasLocationPermission(this)){
             locationService.startLocationUpdates();
+        }else {
+            PermissionManager.requestLocationPermission(this);
         }
     }
 
@@ -49,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_LOCATION && grantResults.length > 0 &&
+        if (requestCode == PermissionManager.getRequestCode() && grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             locationService.startLocationUpdates();
         } else {
@@ -60,13 +69,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mapView.onResume();
+        lifecycleHandler.onResume();
     }
-
     @Override
     protected void onPause() {
         super.onPause();
-        mapView.onPause();
-        locationService.stopLocationUpdates();
+        lifecycleHandler.onPause();
+
     }
 }

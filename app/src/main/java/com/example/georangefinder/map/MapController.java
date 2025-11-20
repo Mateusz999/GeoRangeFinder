@@ -1,10 +1,10 @@
-package com.example.georangefinder;
+package com.example.georangefinder.map;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
-public class MapController implements IMapController{
+public class MapController implements IMapController {
 
     private MapView map;
 
@@ -20,12 +20,17 @@ public class MapController implements IMapController{
     }
 
     @Override
-    public void addMarker(double lat, double lon, String name, String description) {
+    public Marker addMarker(double lat, double lon, String name, String description) {
         Marker marker = new Marker(map);
         marker.setPosition(new GeoPoint(lat,lon));
         marker.setTitle(name);
         marker.setSubDescription(description);
         map.getOverlays().add(marker);
         map.invalidate();
+        return marker;
+    }
+
+    public MapView getMap(){
+        return map;
     }
 }
