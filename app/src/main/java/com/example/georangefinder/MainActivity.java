@@ -2,7 +2,12 @@ package com.example.georangefinder;
 
 
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,7 +19,11 @@ import com.example.georangefinder.map.MapController;
 import com.example.georangefinder.map.MapInitializer;
 import com.example.georangefinder.map.MapLifecycleHandler;
 import com.example.georangefinder.permissions.PermissionManager;
+import com.example.georangefinder.utils.CircleDrawer;
+import com.example.georangefinder.utils.LocationButtonController;
+import com.example.georangefinder.utils.SeekBarController;
 
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 
@@ -27,14 +36,25 @@ public class MainActivity extends AppCompatActivity {
     private MapLifecycleHandler lifecycleHandler;
 
     private MapEventsOverlay overlay;
+    private SeekBarController seekBarController;
+    private LocationButtonController locationButtonController;
+    private CircleDrawer circleDrawer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        SeekBar seekBar = findViewById(R.id.rangeSeekBar);
+        TextView rangeValueText = findViewById(R.id.rangeValueText);
+        Button changeRangeButton = findViewById(R.id.changeRangeButton);
+        ImageButton currentLocationButton = findViewById(R.id.currentLocationButton);
+
+        seekBarController = new SeekBarController(this, rangeValueText);
+        seekBar.setOnSeekBarChangeListener(seekBarController);
+
         mapView = findViewById(R.id.map);
-        mapView = MapInitializer.initMap(this,mapView);
+        MapInitializer.initMap(this, mapView);
 
         mapController = new MapController(mapView);
         mapController.showUserLocation(50.473, 17.334);
@@ -47,6 +67,21 @@ public class MainActivity extends AppCompatActivity {
         overlay = new MapEventsOverlay(clickListener);
         mapView.getOverlays().add(overlay);
 
+
+        locationButtonController = new LocationButtonController(mapView,locationService);
+        locationButtonController.attachTo(currentLocationButton);
+
+        circleDrawer = new CircleDrawer(mapView);
+
+        changeRangeButton.setOnClickListener( v -> {
+            Location userLocation = locationService.getCurrentLocation();
+            if(userLocation != null){
+                GeoPoint center = new GeoPoint(userLocation.getLatitude(),userLocation.getLongitude());
+                circleDrawer.drawCircle(center,seekBarController.getCurrentRadius());
+            } else {
+                Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show();
+            }
+        });
         if(PermissionManager.hasLocationPermission(this)){
             locationService.startLocationUpdates();
         }else {

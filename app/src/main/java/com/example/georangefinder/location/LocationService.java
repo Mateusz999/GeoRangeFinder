@@ -20,7 +20,7 @@ public class LocationService {
     private final Context context;
     private final LocationManager locationManager;
 
-
+    private Location currentLocation;
     private final LocationListener listener;
 
     public LocationService(Context context, LocationCallback callback) {
@@ -31,6 +31,7 @@ public class LocationService {
             @Override
             public void onLocationChanged(@NonNull Location location) {
                 callback.onLocationChanged(location);
+                currentLocation = location;
             };
 
             @Override
@@ -49,6 +50,8 @@ public class LocationService {
             }
 
 
+
+
         };
     }
 
@@ -61,5 +64,9 @@ public class LocationService {
 
     public void stopLocationUpdates() {
         locationManager.removeUpdates(listener);
+    }
+
+    public Location getCurrentLocation(){
+        return currentLocation;
     }
 }
