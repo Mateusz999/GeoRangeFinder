@@ -1,11 +1,9 @@
-package com.example.georangefinder.utils;
+package com.example.georangefinder.location;
 
 import android.location.Location;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
-
-import com.example.georangefinder.location.LocationService;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;

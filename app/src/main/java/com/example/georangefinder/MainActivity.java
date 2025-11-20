@@ -18,14 +18,19 @@ import com.example.georangefinder.map.MapClickListener;
 import com.example.georangefinder.map.MapController;
 import com.example.georangefinder.map.MapInitializer;
 import com.example.georangefinder.map.MapLifecycleHandler;
+import com.example.georangefinder.markers.MarkerData;
+import com.example.georangefinder.markers.MarkerStorage;
 import com.example.georangefinder.permissions.PermissionManager;
+import com.example.georangefinder.markers.AddMarkerButtonController;
 import com.example.georangefinder.utils.CircleDrawer;
-import com.example.georangefinder.utils.LocationButtonController;
+import com.example.georangefinder.location.LocationButtonController;
 import com.example.georangefinder.utils.SeekBarController;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_LOCATION = 1;
@@ -38,6 +43,9 @@ public class MainActivity extends AppCompatActivity {
     private MapEventsOverlay overlay;
     private SeekBarController seekBarController;
     private LocationButtonController locationButtonController;
+    private AddMarkerButtonController addMarkerButtonController;
+    private MapClickListener clickListener;
+    private MarkerStorage markerStorage;
     private CircleDrawer circleDrawer;
 
     @Override
@@ -49,6 +57,11 @@ public class MainActivity extends AppCompatActivity {
         TextView rangeValueText = findViewById(R.id.rangeValueText);
         Button changeRangeButton = findViewById(R.id.changeRangeButton);
         ImageButton currentLocationButton = findViewById(R.id.currentLocationButton);
+        ImageButton addMarkerButton = findViewById(R.id.addMarkerButton);
+
+
+        markerStorage = new MarkerStorage(this);
+
 
         seekBarController = new SeekBarController(this, rangeValueText);
         seekBar.setOnSeekBarChangeListener(seekBarController);
@@ -59,11 +72,17 @@ public class MainActivity extends AppCompatActivity {
         mapController = new MapController(mapView);
         mapController.showUserLocation(50.473, 17.334);
 
+
+        List<MarkerData> savedMarkers = markerStorage.loadMarkers();
+        for (MarkerData data : savedMarkers) {
+            mapController.addMarker(data);
+        }
+
         locationService = new LocationService(this,new LocationUpdateHandler(mapController));
         lifecycleHandler = new MapLifecycleHandler(mapView, locationService);
 
 
-        MapClickListener clickListener = new MapClickListener(this,mapController);
+        clickListener = new MapClickListener(this,mapController,markerStorage);
         overlay = new MapEventsOverlay(clickListener);
         mapView.getOverlays().add(overlay);
 
@@ -72,6 +91,10 @@ public class MainActivity extends AppCompatActivity {
         locationButtonController.attachTo(currentLocationButton);
 
         circleDrawer = new CircleDrawer(mapView);
+        addMarkerButtonController = new AddMarkerButtonController(clickListener);
+        addMarkerButtonController.attachTo(addMarkerButton);
+
+
 
         changeRangeButton.setOnClickListener( v -> {
             Location userLocation = locationService.getCurrentLocation();

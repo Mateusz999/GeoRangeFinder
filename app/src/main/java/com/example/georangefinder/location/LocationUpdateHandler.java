@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.georangefinder.R;
 import com.example.georangefinder.map.MapController;
+import com.example.georangefinder.markers.MarkerData;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Marker;
@@ -27,7 +28,8 @@ public class LocationUpdateHandler implements LocationService.LocationCallback{
 
         mapController.showUserLocation(lat,lon);
         if (userMarker == null) {
-            userMarker = mapController.addMarker(lat, lon, "Moja lokalizacja", "Aktualna pozycja");
+            MarkerData data = new MarkerData(lat, lon, "Moja lokalizacja", "Aktualna pozycja");
+            userMarker = mapController.addUserLocationMarker(data);
             Drawable icon = ContextCompat.getDrawable(
                     mapController.getMap().getContext(),
                     R.drawable.current_location
